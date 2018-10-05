@@ -1,0 +1,24 @@
+#!/bin/bash
+
+JOBNAME="${1/%.namd/}"
+NCPUS="${2}"
+
+echo "$JOBNAME"
+if [ -z "$1" ]; then
+  echo "Useage: runl NAMD_CONF_FILE PROCS"
+  exit
+fi
+if [ ! -f $JOBNAME.namd ]; then
+	echo "NAMD input file $JOBNAME.namd does not exist!"
+	exit -1
+fi
+
+if [ ! -f $JOBNAME.log ]; then
+        echo "NAMD output file $JOBNAME.log does not exist!"
+        touch $JOBNAME.log 
+fi	
+
+qsub -q gpu -N $JOBNAME -j y -o ~/Jobs << EOF
+cd "$PWD"
+namd2 $JOBNAME.namd >> $JOBNAME.log
+EOF

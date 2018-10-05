@@ -1,0 +1,120 @@
+#############################################################
+## JOB DESCRIPTION                                         ##
+#############################################################
+#
+# Initial minimization and equilibration of the coarse-grained system.
+#
+#############################################################
+## ADJUSTABLE PARAMETERS                                   ##
+#############################################################
+set outputname  /Scr/hyunpark/UIUCRotation1/het_CDL1_20/6Tries/4010/gridForce
+set restart 0
+set temperature    310
+cosAngles          on
+
+structure        /Scr/hyunpark/UIUCRotation1/het_CDL1_20/01-solvate-ionize/lipid_water_ions.psf
+coordinates	 /Scr/hyunpark/UIUCRotation1/het_CDL1_20/01-solvate-ionize/lipid_water_ions.pdb
+
+temperature     $temperature
+firsttimestep   0
+
+#binCoordinates     gridForce1.restart.coor
+#binVelocities      gridForce1.restart.vel  ;# remove the "temperature" entry if you use this!
+#extendedSystem     gridForce1.restart.xsc
+
+#############################################################
+## SIMULATION PARAMETERS                                   ##
+#############################################################
+
+# Input
+paraTypeCharmm      on
+parameters             /Scr/hyunpark/UIUCRotation1/het_CDL1_20/toppar/martini_v2.2.namd.prm 
+parameters             /Scr/hyunpark/UIUCRotation1/het_CDL1_20/toppar/martini_CDL1.par 
+parameters             /Scr/hyunpark/UIUCRotation1/het_CDL1_20/toppar/martini_DOPC.par 
+
+# Force-Field Parameters
+exclude             1-2
+1-4scaling          1.0
+cutoff              12.0
+martiniSwitching    on
+switching           on
+PME                 off
+switchdist          9.0
+pairlistdist        14.0
+dielectric          15.0
+
+# Integrator Parameters
+timestep            20.0
+nonbondedFreq       1
+stepspercycle       10
+
+# Constant Temperature Control
+langevin            yes    ;# do langevin dynamics
+langevinDamping     1      ;# damping coefficient (gamma) of 1/ps
+langevinTemp        $temperature
+langevinHydrogen    off    ;# don't couple langevin bath to hydrogens
+
+# Periodic Boundary Conditions
+if {$restart == 0} {
+#cellBasisVector1 259.7640075683594 0 0
+#cellBasisVector2 0 264.2310028076172 0
+#cellBasisVector3 0 0 143.2760009765625
+cellBasisVector1 250.06729 0 0
+cellBasisVector2 0 250.06729 0
+cellBasisVector3 0 0 162
+cellOrigin 0.0 0.0 0.0
+}
+wrapAll                         on
+wrapNearest                     on
+wrapWater                       off
+
+COMmotion                       no
+
+# Constant Pressure Control (variable volume)
+useGroupPressure      no
+useFlexibleCell       yes
+useConstantArea       no
+useConstantRatio      yes
+
+langevinPiston        yes
+langevinPistonTarget  1.01325 ;#  in bar -> 1 atm
+langevinPistonPeriod  2000.  #usually 2000 for RBCG system
+langevinPistonDecay   1000.  #usually 1000 for RBCG system
+langevinPistonTemp    $temperature
+
+##############################
+########Grid Force
+#efieldon		on
+#efield			0 0 2.88
+
+gridforce			on
+gridforcefile			/Scr/hyunpark/UIUCRotation1/het_CDL1_20/6Tries/4010/betaandocc0.pdb
+gridforcecol			B
+gridforcechargecol		O
+gridforcepotfile		grid.dx
+gridforcescale			10 10 0
+gridforcecont1			yes
+gridforcecont2			yes
+gridforcecont3			yes
+gridforcechecksize       	off
+##############################
+
+# Output
+outputName          $outputname
+restartfreq          1000
+dcdfreq              1000
+xstFreq              1000
+outputEnergies       1000
+outputPressure       1000
+
+#############################################################
+## EXECUTION SCRIPT                                        ##
+#############################################################
+
+if {$restart == 0} {
+minimize             5000
+reinitvels          $temperature
+}
+
+run 15000000
+
